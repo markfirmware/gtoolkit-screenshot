@@ -1,6 +1,11 @@
 Class {
 	#name : #Screenshot,
 	#superclass : #Object,
+	#instVars : [
+		'form',
+		'profile',
+		'root'
+	],
 	#classInstVars : [
 		'repositories'
 	],
@@ -8,35 +13,42 @@ Class {
 }
 
 { #category : #accessing }
-Screenshot class >> jsonProfileFor: item [
-	^ STON toJsonStringPretty: (Screenshot profileFor: item)
+Screenshot class >> take [
+	^ self new take
 ]
 
 { #category : #accessing }
-Screenshot class >> profileFor: item [
-	| profile |
-	profile := Dictionary new.
-	(item respondsTo: #text)
-		ifTrue: [ profile at: #text put: item text asString ]
+Screenshot >> json [
+	^ STON toJsonString: profile
+]
+
+{ #category : #accessing }
+Screenshot >> profileFor: i [
+	| p |
+	p := Dictionary new.
+	(i respondsTo: #text)
+		ifTrue: [ profile at: #text put: i text asString ]
 		ifFalse: [ | childProfiles |
 			childProfiles := OrderedCollection new.
-			item children
+			i children
 				do: [ :child | 
 					| childProfile |
-					childProfile := Screenshot profileFor: child.
+					childProfile := self profileFor: child.
 					childProfile isEmpty
 						ifFalse:
 							[ childProfiles add: childProfile ] ].
 			childProfiles isEmpty
 				ifFalse:
-					[ profile at: #children put: childProfiles asArray ] ].
-	profile isEmpty
+					[ p at: #children put: childProfiles asArray ] ].
+	p isEmpty
 		ifFalse:
-			[ profile at: #className put: item class name ].
-	^ profile
+			[ p at: #className put: i class name ].
+	^ p
 ]
 
 { #category : #accessing }
-Screenshot class >> take [
-	^ self jsonProfileFor: GtWorldElement allInstances first
+Screenshot >> take [
+	root :=  GtWorldElement allInstances first.
+	form := root exportAsForm.
+	profile := self profileFor: root
 ]
