@@ -1,0 +1,41 @@
+#!/bin/bash
+
+VERSION=v0.8.517
+GLAM=GlamorousToolkitLinux64-$VERSION
+
+if [[ ! -d $GLAM ]]
+then
+    echo
+    echo installing $GLAM ...
+    wget -q https://dl.feenk.com/gt/GlamorousToolkitLinux64-$VERSION.zip
+    unzip -q Glamorous*.zip
+    rm Glamorous*.zip
+fi
+
+pushd $GLAM >& /dev/null
+
+    MISSING=$(ldd libSkia.so | grep "not found")
+    if [[ "$MISSING" != "" ]]
+    then
+        echo need updated libstdc++
+        echo
+        read -p "instsll ? " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]
+        then
+            exit 1
+       fi
+       set -x
+       sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+       sudo apt-get install -y g++-10
+       set +x
+       echo
+   fi
+    
+   echo
+   echo starting $GLAM
+   ./glamoroustoolkit GlamorousToolkit.image st ../load.st --no-quit --interactive
+
+popd >& /dev/null
+
+git status
