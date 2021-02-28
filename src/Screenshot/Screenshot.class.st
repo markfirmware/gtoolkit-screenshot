@@ -27,7 +27,7 @@ Screenshot >> profileFor: i [
 	| p |
 	p := Dictionary new.
 	(i respondsTo: #text)
-		ifTrue: [ profile at: #text put: i text asString ]
+		ifTrue: [ p at: #text put: i text asString ]
 		ifFalse: [ | childProfiles |
 			childProfiles := OrderedCollection new.
 			i children
