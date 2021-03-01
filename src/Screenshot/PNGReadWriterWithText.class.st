@@ -209,7 +209,16 @@ PNGReadWriterWithText >> processNextChunk [
 
 { #category : #accessing }
 PNGReadWriterWithText >> processtEXtChunk [
-	keywordAndTexts add: #text -> chunk size asString
+	| text done |
+	text := chunk copy.
+	done := false.
+	text withIndexDo: [ :x :i |
+		done ifFalse: [
+			text at: i put: (String space at: 1).
+			done := x = 0
+		]
+	].
+	keywordAndTexts add: #text -> text asString
 ]
 
 { #category : #accessing }

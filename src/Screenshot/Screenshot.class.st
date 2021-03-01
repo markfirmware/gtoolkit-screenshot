@@ -13,9 +13,10 @@ Class {
 
 { #category : #accessing }
 Screenshot class >> readFrom: fileName [
-	| formAndText |
-	formAndText := PNGReadWriterWithText formAndTextFromFileNamed: fileName.
-	^self new form: formAndText key; profile: (STON fromString: formAndText value; yourself)
+	| formAndTexts firstText |
+	formAndTexts := PNGReadWriterWithText formAndTextFromFileNamed: fileName.
+	firstText := formAndTexts value first value.
+	^self new form: formAndTexts key; profile: (STON fromString: firstText); yourself
 ]
 
 { #category : #accessing }
