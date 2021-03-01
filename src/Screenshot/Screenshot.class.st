@@ -30,11 +30,6 @@ Screenshot >> form: anObject [
 ]
 
 { #category : #accessing }
-Screenshot >> json [
-	^ STON toJsonString: profile
-]
-
-{ #category : #accessing }
 Screenshot >> profile: anObject [
 	profile := anObject
 ]
@@ -71,8 +66,8 @@ PNGReadWriterWithTextChunks putForm: form onFileNamed:
 
 { #category : #accessing }
 Screenshot >> take [
-	| root1 |
-	root1 :=  GtWorldElement allInstances first.
-	form := root1 exportAsForm.
-	profile := self profileFor: root1
+	| root |
+	root :=  GtWorldElement allInstances first.
+	form := root exportAsForm.
+	profile := self profileFor: root
 ]
