@@ -47,6 +47,12 @@ Screenshot >> profileFor: i [
 ]
 
 { #category : #accessing }
+Screenshot >> saveOn: fileName [
+PNGReadWriterWithText putForm: form onFileNamed:  
+ fileName with: (OrderedCollection with: #fullProfile -> self json)
+]
+
+{ #category : #accessing }
 Screenshot >> take [
 	root :=  GtWorldElement allInstances first.
 	form := root exportAsForm.
