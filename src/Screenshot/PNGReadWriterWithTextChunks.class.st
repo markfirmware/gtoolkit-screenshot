@@ -2,7 +2,7 @@ Class {
 	#name : #PNGReadWriterWithTextChunks,
 	#superclass : #PNGReadWriter,
 	#instVars : [
-		'textChunkAsAssociations'
+		'textChunks'
 	],
 	#category : #Screenshot
 }
@@ -34,23 +34,23 @@ PNGReadWriterWithTextChunks class >> formAndTextFromStream: aBinaryReadStream [
 	reader := readerClass new on: positionableReadStream.
 	form := reader nextImage.
 	aBinaryReadStream close.
-	^ form -> reader textChunksAsAssociations
+	^ Dictionary newFromPairs: { #form . form . #attachments . reader textChunks }
 ]
 
 { #category : #accessing }
-PNGReadWriterWithTextChunks class >> putForm: aForm onFileNamed: fileName withTextChunksAsAssociations: someAssociations [ 
+PNGReadWriterWithTextChunks class >> putForm: aForm onFileNamed: fileName withTextChunks: someTextChunks [ 
 
 	
 	"PNGReadWriter putForm: PolymorphSystemSettings pharoLogoForm onFileNamed: 'test.png'"
 	"PluginBasedJPEGReadWriter putForm: PolymorphSystemSettings pharoLogoForm onFileNamed: 'test.jpg'"
 	
 	fileName asFileReference 
-		binaryWriteStreamDo: [ :out | (self on: out) nextPutImage: aForm withTextChunksAsAssociations: someAssociations ]
+		binaryWriteStreamDo: [ :out | (self on: out) nextPutImage: aForm withTextChunks: someTextChunks ]
 ]
 
 { #category : #accessing }
 PNGReadWriterWithTextChunks >> nextImage [
-	textChunkAsAssociations := OrderedCollection new.
+	textChunks := OrderedCollection new.
 	bigEndian := EndianDetector isBigEndian.
 	filtersSeen := Bag new.
 	idatChunkStream := nil.
@@ -85,7 +85,7 @@ PNGReadWriterWithTextChunks >> nextImage [
 
 { #category : #writing }
 PNGReadWriterWithTextChunks >> nextPutImage: aForm [
-	textChunkAsAssociations := #().
+	textChunks := #().
 	^self nextPutImage: aForm
 ]
 
@@ -131,8 +131,8 @@ PNGReadWriterWithTextChunks >> nextPutImage: aForm interlace: aMethod filter: aF
 	self writeIDATChunkOn: crcStream.
 	self writeChunk: crcStream.
 	crcStream resetToStart.
-	textChunkAsAssociations do: [ :x |
-		self writetEXtChunkOn: crcStream withKeyword: x key text: x value.
+	textChunks do: [ :x |
+		self writetEXtChunkOn: crcStream withKeyword: (x at: #keyword) text: (x at: #text).
 		self writeChunk: crcStream
 	].
 	crcStream resetToStart.
@@ -141,9 +141,9 @@ PNGReadWriterWithTextChunks >> nextPutImage: aForm interlace: aMethod filter: aF
 ]
 
 { #category : #accessing }
-PNGReadWriterWithTextChunks >> nextPutImage: aForm withTextChunksAsAssociations: someAssociations [
+PNGReadWriterWithTextChunks >> nextPutImage: aForm withTextChunks: someTextChunks [
 	"Write out the given form. We're keeping it simple here, no interlacing, no filters."
-	textChunkAsAssociations := someAssociations.
+	textChunks := someTextChunks.
 	^self nextPutImage: aForm interlace: 0 filter: 0. "no filtering"
 ]
 
@@ -191,21 +191,14 @@ PNGReadWriterWithTextChunks >> processNextChunk [
 
 { #category : #accessing }
 PNGReadWriterWithTextChunks >> processtEXtChunk [
-	| text done |
-	text := chunk asString.
-	done := false.
-	text withIndexDo: [ :x :i |
-		done ifFalse: [
-			text at: i put: Character space.
-			done := x = Character null
-		]
-	].
-	textChunkAsAssociations add: #text -> text
+	| keywordAndText |
+	keywordAndText := chunk asString splitOn: Character null asString.
+	textChunks add: (Dictionary newFromPairs: { #keyword . keywordAndText first . #text . keywordAndText second })
 ]
 
 { #category : #accessing }
-PNGReadWriterWithTextChunks >> textChunksAsAssociations [
-	^textChunkAsAssociations
+PNGReadWriterWithTextChunks >> textChunks [
+	^textChunks
 ]
 
 { #category : #writing }
