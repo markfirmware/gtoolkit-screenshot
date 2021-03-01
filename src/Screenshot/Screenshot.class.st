@@ -3,8 +3,7 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'form',
-		'profile',
-		'root'
+		'profile'
 	],
 	#classInstVars : [
 		'repositories'
@@ -13,13 +12,30 @@ Class {
 }
 
 { #category : #accessing }
+Screenshot class >> readFrom: fileName [
+	| formAndText |
+	formAndText := PNGReadWriterWithText formAndTextFromFileNamed: fileName.
+	^self new form: formAndText key; profile: (STON fromString: formAndText value; yourself)
+]
+
+{ #category : #accessing }
 Screenshot class >> take [
 	^ self new take
 ]
 
 { #category : #accessing }
+Screenshot >> form: anObject [
+	form := anObject
+]
+
+{ #category : #accessing }
 Screenshot >> json [
 	^ STON toJsonString: profile
+]
+
+{ #category : #accessing }
+Screenshot >> profile: anObject [
+	profile := anObject
 ]
 
 { #category : #accessing }
@@ -54,7 +70,8 @@ PNGReadWriterWithText putForm: form onFileNamed:
 
 { #category : #accessing }
 Screenshot >> take [
-	root :=  GtWorldElement allInstances first.
-	form := root exportAsForm.
-	profile := self profileFor: root
+	| root1 |
+	root1 :=  GtWorldElement allInstances first.
+	form := root1 exportAsForm.
+	profile := self profileFor: root1
 ]
