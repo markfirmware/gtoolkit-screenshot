@@ -7,6 +7,54 @@ Class {
 	#category : #Screenshot
 }
 
+{ #category : #'image reading/writing' }
+PNGReadWriterWithText class >> formAndTextFromFileNamed: fileName [ 
+	"Answer a Form of the image stored (encoded) on the file with fileName.
+	This will (normally) autodetect the format and delegate to the correct concrete subclass."
+	
+	"ImageReadWriter formFromFileNamed: 'test.png'"
+	"ImageReadWriter formFromFileNamed: 'test.jpg'"
+	
+	^ fileName asFileReference 
+		binaryReadStreamDo: [ :in | self formAndTextFromStream: in ]
+]
+
+{ #category : #'image reading/writing' }
+PNGReadWriterWithText class >> formAndTextFromStream: aBinaryReadStream [
+	"Answer a Form of the image stored on aBinaryReadStream.
+	This will (normally) autodetect the format and delegate to the correct concrete subclass.
+	Closes aBinaryReadStream when done."
+	
+	"ImageReadWriter formFromStream: 'test.png' asFileReference binaryReadStream"
+	"ImageReadWriter formFromStream: 'test.jpg' asFileReference binaryReadStream"
+
+	| positionableReadStream reader readerClass form |
+	positionableReadStream := ZnPositionableReadStream on: aBinaryReadStream.
+	readerClass := self readerClassFromStream: positionableReadStream.
+	reader := readerClass new on: positionableReadStream.
+	form := reader nextImage.
+	aBinaryReadStream close.
+	^ form -> reader texts
+]
+
+{ #category : #'image reading/writing' }
+PNGReadWriterWithText class >> formFromStream: aBinaryReadStream [
+	"Answer a Form of the image stored on aBinaryReadStream.
+	This will (normally) autodetect the format and delegate to the correct concrete subclass.
+	Closes aBinaryReadStream when done."
+	
+	"ImageReadWriter formFromStream: 'test.png' asFileReference binaryReadStream"
+	"ImageReadWriter formFromStream: 'test.jpg' asFileReference binaryReadStream"
+
+	| positionableReadStream reader readerClass form |
+	positionableReadStream := ZnPositionableReadStream on: aBinaryReadStream.
+	readerClass := self readerClassFromStream: positionableReadStream.
+	reader := readerClass new on: positionableReadStream.
+	form := reader nextImage.
+	aBinaryReadStream close.
+	^ form -> reader texts
+]
+
 { #category : #accessing }
 PNGReadWriterWithText class >> putForm: aForm onFileNamed: fileName with: texts [
 
@@ -16,6 +64,47 @@ PNGReadWriterWithText class >> putForm: aForm onFileNamed: fileName with: texts 
 	
 	fileName asFileReference 
 		binaryWriteStreamDo: [ :out | (self on: out) nextPutImage: aForm with: texts]
+]
+
+{ #category : #accessing }
+PNGReadWriterWithText >> nextImage [
+	keywordAndTexts := OrderedCollection new.
+	bigEndian := EndianDetector isBigEndian.
+	filtersSeen := Bag new.
+	idatChunkStream := nil.
+	transparentPixelValue := nil.
+	unknownChunks := Set new.
+	stream skip: 8.
+	[ stream atEnd ] whileFalse: [ self processNextChunk ].
+	"Set up our form"
+	palette
+		ifNotNil: [ "Dump the palette if it's the same as our standard palette"
+			palette = (StandardColors copyFrom: 1 to: palette size)
+				ifTrue: [ palette := nil ] ].
+	(depth <= 8 and: [ palette notNil ])
+		ifTrue: [ form := ColorForm extent: width @ height depth: depth.
+			form colors: palette ]
+		ifFalse: [ form := Form extent: width @ height depth: depth ].
+	backColor ifNotNil: [ form fillColor: backColor ].
+	idatChunkStream
+		ifNil: [ self error: 'image data is missing' ]
+		ifNotNil: [ self processIDATChunk ].
+	unknownChunks isEmpty
+		ifFalse:
+			[ "Transcript show: ' ',unknownChunks asSortedCollection asArray printString." ].
+	self debugging
+		ifTrue: [ self crTrace: 'form = ' , form printString.
+			self crTrace: 'colorType = ' , colorType printString.
+			self crTrace: 'interlaceMethod = ' , interlaceMethod printString.
+			self
+				crTrace: 'filters = ' , filtersSeen sortedCounts asArray printString ].
+	^ form
+]
+
+{ #category : #writing }
+PNGReadWriterWithText >> nextPutImage: aForm [
+	keywordAndTexts := #().
+	^self nextPutImage: aForm
 ]
 
 { #category : #writing }
@@ -74,6 +163,58 @@ PNGReadWriterWithText >> nextPutImage: aForm with: texts [
 	"Write out the given form. We're keeping it simple here, no interlacing, no filters."
 	keywordAndTexts := texts.
 	^self nextPutImage: aForm interlace: 0 filter: 0. "no filtering"
+]
+
+{ #category : #accessing }
+PNGReadWriterWithText >> processNextChunk [
+	| length chunkType crc chunkCrc |
+	length := self nextLong.
+	chunkType := (self next: 4) asString.
+ 	(chunk isNil or: [ chunk size ~= length ])
+ 		ifTrue: [ chunk := self next: length ]
+ 		ifFalse: [ stream next: length into: chunk startingAt: 1 ].
+	chunkCrc := self nextLong bitXor: 4294967295.
+	crc := self 
+		updateCrc: 4294967295
+		from: 1
+		to: 4
+		in: chunkType.
+	crc := self 
+		updateCrc: crc
+		from: 1
+		to: length
+		in: chunk.
+	crc = chunkCrc ifFalse: [ self error: 'PNGReadWriter crc error in chunk ' , chunkType ].
+	chunkType = 'IEND' ifTrue: [ ^ self	"*should* be the last chunk" ].
+	chunkType = 'sBIT' ifTrue: 
+		[ ^ self processSBITChunk	"could indicate unusual sample depth in original" ].
+	chunkType = 'gAMA' ifTrue: [ ^ self	"indicates gamma correction value" ].
+	chunkType = 'bKGD' ifTrue: [ ^ self processBackgroundChunk ].
+	chunkType = 'pHYs' ifTrue: [ ^ self processPhysicalPixelChunk ].
+	chunkType = 'tRNS' ifTrue: [ ^ self processTransparencyChunk ].
+	chunkType = 'IHDR' ifTrue: [ ^ self processIHDRChunk ].
+	chunkType = 'PLTE' ifTrue: [ ^ self processPLTEChunk ].
+	chunkType = 'tEXt' ifTrue: [ ^ self processtEXtChunk ].
+	chunkType = 'IDAT' ifTrue: 
+		[ "---since the compressed data can span multiple
+		chunks, stitch them all together first. later,
+		if memory is an issue, we need to figure out how
+		to do this on the fly---"
+ 		idatChunkStream
+ 			ifNil: [ idatChunkStream := WriteStream with: chunk copy ]
+ 			ifNotNil: [ idatChunkStream nextPutAll: chunk ].
+		^ self ].
+	unknownChunks add: chunkType
+]
+
+{ #category : #accessing }
+PNGReadWriterWithText >> processtEXtChunk [
+	keywordAndTexts add: #text -> chunk size asString
+]
+
+{ #category : #accessing }
+PNGReadWriterWithText >> texts [
+	^keywordAndTexts
 ]
 
 { #category : #writing }
