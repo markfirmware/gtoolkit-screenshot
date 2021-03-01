@@ -1,14 +1,14 @@
 Class {
-	#name : #PNGReadWriterWithText,
+	#name : #PNGReadWriterWithTextChunks,
 	#superclass : #PNGReadWriter,
 	#instVars : [
-		'keywordAndTexts'
+		'textChunkAsAssociations'
 	],
 	#category : #Screenshot
 }
 
 { #category : #'image reading/writing' }
-PNGReadWriterWithText class >> formAndTextFromFileNamed: fileName [ 
+PNGReadWriterWithTextChunks class >> formAndTextFromFileNamed: fileName [ 
 	"Answer a Form of the image stored (encoded) on the file with fileName.
 	This will (normally) autodetect the format and delegate to the correct concrete subclass."
 	
@@ -20,7 +20,7 @@ PNGReadWriterWithText class >> formAndTextFromFileNamed: fileName [
 ]
 
 { #category : #'image reading/writing' }
-PNGReadWriterWithText class >> formAndTextFromStream: aBinaryReadStream [
+PNGReadWriterWithTextChunks class >> formAndTextFromStream: aBinaryReadStream [
 	"Answer a Form of the image stored on aBinaryReadStream.
 	This will (normally) autodetect the format and delegate to the correct concrete subclass.
 	Closes aBinaryReadStream when done."
@@ -34,41 +34,23 @@ PNGReadWriterWithText class >> formAndTextFromStream: aBinaryReadStream [
 	reader := readerClass new on: positionableReadStream.
 	form := reader nextImage.
 	aBinaryReadStream close.
-	^ form -> reader texts
-]
-
-{ #category : #'image reading/writing' }
-PNGReadWriterWithText class >> formFromStream: aBinaryReadStream [
-	"Answer a Form of the image stored on aBinaryReadStream.
-	This will (normally) autodetect the format and delegate to the correct concrete subclass.
-	Closes aBinaryReadStream when done."
-	
-	"ImageReadWriter formFromStream: 'test.png' asFileReference binaryReadStream"
-	"ImageReadWriter formFromStream: 'test.jpg' asFileReference binaryReadStream"
-
-	| positionableReadStream reader readerClass form |
-	positionableReadStream := ZnPositionableReadStream on: aBinaryReadStream.
-	readerClass := self readerClassFromStream: positionableReadStream.
-	reader := readerClass new on: positionableReadStream.
-	form := reader nextImage.
-	aBinaryReadStream close.
-	^ form -> reader texts
+	^ form -> reader textChunksAsAssociations
 ]
 
 { #category : #accessing }
-PNGReadWriterWithText class >> putForm: aForm onFileNamed: fileName with: texts [
+PNGReadWriterWithTextChunks class >> putForm: aForm onFileNamed: fileName withTextChunksAsAssociations: someAssociations [ 
 
 	
 	"PNGReadWriter putForm: PolymorphSystemSettings pharoLogoForm onFileNamed: 'test.png'"
 	"PluginBasedJPEGReadWriter putForm: PolymorphSystemSettings pharoLogoForm onFileNamed: 'test.jpg'"
 	
 	fileName asFileReference 
-		binaryWriteStreamDo: [ :out | (self on: out) nextPutImage: aForm with: texts]
+		binaryWriteStreamDo: [ :out | (self on: out) nextPutImage: aForm withTextChunksAsAssociations: someAssociations ]
 ]
 
 { #category : #accessing }
-PNGReadWriterWithText >> nextImage [
-	keywordAndTexts := OrderedCollection new.
+PNGReadWriterWithTextChunks >> nextImage [
+	textChunkAsAssociations := OrderedCollection new.
 	bigEndian := EndianDetector isBigEndian.
 	filtersSeen := Bag new.
 	idatChunkStream := nil.
@@ -102,13 +84,13 @@ PNGReadWriterWithText >> nextImage [
 ]
 
 { #category : #writing }
-PNGReadWriterWithText >> nextPutImage: aForm [
-	keywordAndTexts := #().
+PNGReadWriterWithTextChunks >> nextPutImage: aForm [
+	textChunkAsAssociations := #().
 	^self nextPutImage: aForm
 ]
 
 { #category : #writing }
-PNGReadWriterWithText >> nextPutImage: aForm interlace: aMethod filter: aFilterType [ 
+PNGReadWriterWithTextChunks >> nextPutImage: aForm interlace: aMethod filter: aFilterType [ 
 	"Note: For now we keep it simple - interlace and filtering are simply ignored"
 
 	| crcStream |
@@ -149,7 +131,7 @@ PNGReadWriterWithText >> nextPutImage: aForm interlace: aMethod filter: aFilterT
 	self writeIDATChunkOn: crcStream.
 	self writeChunk: crcStream.
 	crcStream resetToStart.
-	keywordAndTexts do: [ :x |
+	textChunkAsAssociations do: [ :x |
 		self writetEXtChunkOn: crcStream withKeyword: x key text: x value.
 		self writeChunk: crcStream
 	].
@@ -159,14 +141,14 @@ PNGReadWriterWithText >> nextPutImage: aForm interlace: aMethod filter: aFilterT
 ]
 
 { #category : #accessing }
-PNGReadWriterWithText >> nextPutImage: aForm with: texts [
+PNGReadWriterWithTextChunks >> nextPutImage: aForm withTextChunksAsAssociations: someAssociations [
 	"Write out the given form. We're keeping it simple here, no interlacing, no filters."
-	keywordAndTexts := texts.
+	textChunkAsAssociations := someAssociations.
 	^self nextPutImage: aForm interlace: 0 filter: 0. "no filtering"
 ]
 
 { #category : #accessing }
-PNGReadWriterWithText >> processNextChunk [
+PNGReadWriterWithTextChunks >> processNextChunk [
 	| length chunkType crc chunkCrc |
 	length := self nextLong.
 	chunkType := (self next: 4) asString.
@@ -208,26 +190,26 @@ PNGReadWriterWithText >> processNextChunk [
 ]
 
 { #category : #accessing }
-PNGReadWriterWithText >> processtEXtChunk [
+PNGReadWriterWithTextChunks >> processtEXtChunk [
 	| text done |
-	text := chunk copy.
+	text := chunk asString.
 	done := false.
 	text withIndexDo: [ :x :i |
 		done ifFalse: [
-			text at: i put: (String space at: 1).
-			done := x = 0
+			text at: i put: Character space.
+			done := x = Character null
 		]
 	].
-	keywordAndTexts add: #text -> text asString
+	textChunkAsAssociations add: #text -> text
 ]
 
 { #category : #accessing }
-PNGReadWriterWithText >> texts [
-	^keywordAndTexts
+PNGReadWriterWithTextChunks >> textChunksAsAssociations [
+	^textChunkAsAssociations
 ]
 
 { #category : #writing }
-PNGReadWriterWithText >> writetEXtChunkOn: aStream withKeyword: keyword text: text [
+PNGReadWriterWithTextChunks >> writetEXtChunkOn: aStream withKeyword: keyword text: text [
 	"Write a tEXt chunk"
 	aStream nextPutAll: 'tEXt' asByteArray.
 	aStream nextPutAll: keyword asByteArray.

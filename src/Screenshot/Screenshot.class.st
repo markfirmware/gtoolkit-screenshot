@@ -14,7 +14,7 @@ Class {
 { #category : #accessing }
 Screenshot class >> readFrom: fileName [
 	| formAndTexts firstText |
-	formAndTexts := PNGReadWriterWithText formAndTextFromFileNamed: fileName.
+	formAndTexts := PNGReadWriterWithTextChunks formAndTextFromFileNamed: fileName.
 	firstText := formAndTexts value first value.
 	^self new form: formAndTexts key; profile: (STON fromString: firstText); yourself
 ]
@@ -65,8 +65,8 @@ Screenshot >> profileFor: i [
 
 { #category : #accessing }
 Screenshot >> saveOn: fileName [
-PNGReadWriterWithText putForm: form onFileNamed:  
- fileName with: (OrderedCollection with: #fullProfile -> self json)
+PNGReadWriterWithTextChunks putForm: form onFileNamed:  
+ fileName withTextChunksAsAssociations: (OrderedCollection with: #fullProfile -> self json)
 ]
 
 { #category : #accessing }
