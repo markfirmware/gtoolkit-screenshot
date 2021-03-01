@@ -3,7 +3,7 @@
 Load the code:
 
     Metacello new
-        repository: 'github://markfirmware/Screenshot:master/src';
+        repository: 'github://markfirmware/gtoolkit-screenshot:master/src';
         baseline: 'Screenshot';
         load
 
