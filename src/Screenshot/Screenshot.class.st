@@ -6,10 +6,15 @@ Class {
 		'profile'
 	],
 	#classInstVars : [
-		'repositories'
+		'lastTaken'
 	],
 	#category : #Screenshot
 }
+
+{ #category : #accessing }
+Screenshot class >> lastTaken [
+	^ lastTaken
+]
 
 { #category : #accessing }
 Screenshot class >> readFromFileNamed: fileName [
@@ -26,7 +31,7 @@ Screenshot class >> take [
 
 { #category : #accessing }
 Screenshot class >> takeForElement: anElement [
-	^ self new takeForElement: anElement
+	^ lastTaken := self new takeForElement: anElement
 ]
 
 { #category : #accessing }
@@ -86,14 +91,6 @@ Screenshot >> profileFor: anElement [
 { #category : #accessing }
 Screenshot >> profileTextChunkKeyword [
 	^'Screenshot>>profile'
-]
-
-{ #category : #accessing }
-Screenshot >> take [
-	| root |
-	root :=  GtWorldElement allInstances first.
-	form := root exportAsForm.
-	profile := self profileFor: root
 ]
 
 { #category : #accessing }
