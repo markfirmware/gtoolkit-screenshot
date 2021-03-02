@@ -99,7 +99,11 @@ Screenshot >> take [
 { #category : #accessing }
 Screenshot >> takeForElement: anElement [
 	| root |
-	root :=  anElement root.
+	root := anElement.
+	[ root isRoot ]
+		whileFalse: [
+			root := root parent
+		].
 	form := root exportAsForm.
 	profile := self profileFor: root
 ]
