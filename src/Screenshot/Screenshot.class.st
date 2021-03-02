@@ -21,7 +21,12 @@ Screenshot class >> readFromFileNamed: fileName [
 
 { #category : #accessing }
 Screenshot class >> take [
-	^ self new take
+	^ self takeForElement: GtWorldElement allInstances first.
+]
+
+{ #category : #accessing }
+Screenshot class >> takeForElement: anElement [
+	^ self new takeForElement: anElement
 ]
 
 { #category : #accessing }
@@ -87,6 +92,14 @@ Screenshot >> profileTextChunkKeyword [
 Screenshot >> take [
 	| root |
 	root :=  GtWorldElement allInstances first.
+	form := root exportAsForm.
+	profile := self profileFor: root
+]
+
+{ #category : #accessing }
+Screenshot >> takeForElement: anElement [
+	| root |
+	root :=  anElement root.
 	form := root exportAsForm.
 	profile := self profileFor: root
 ]
