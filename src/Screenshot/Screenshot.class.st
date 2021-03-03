@@ -54,12 +54,20 @@ Screenshot class >> takeForElement: anElement [
 
 { #category : #accessing }
 Screenshot class >> test [
-	| fileName |
-	fileName := 'screenshot-1.png'.
 	Screenshot
-		take writeToFileNamed: fileName.
+		take writeToFileNamed: self testFileName.
 	^ Screenshot
-		readFromFileNamed: fileName
+		readFromFileNamed: self testFileName
+]
+
+{ #category : #accessing }
+Screenshot class >> testFileName [
+	^ 'screenshot-1.png'
+]
+
+{ #category : #accessing }
+Screenshot class >> testFileReference [
+	^ self testFileName asFileReference
 ]
 
 { #category : #accessing }
