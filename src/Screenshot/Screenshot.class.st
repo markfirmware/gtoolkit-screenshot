@@ -23,9 +23,9 @@ Screenshot class >> lastTaken [
 
 { #category : #accessing }
 Screenshot class >> playgroundContentsFromFileNamed: fileName [
-	| attachments profileChunk |
-	attachments := (PNGReadWriterWithTextChunks formAndTextFromFileNamed: fileName) at: #attachments.
-	profileChunk := attachments detect: [ :c | self isProfileTextChunk: c ] ifNone: [ ^ nil ].
+	| textChunks profileChunk |
+	textChunks := (PNGReadWriterWithTextChunks formAndChunksFromFileNamed: fileName) at: #textChunks.
+	profileChunk := textChunks detect: [ :c | self isProfileTextChunk: c ] ifNone: [ ^ nil ].
 	^ (STON fromString: profileChunk text) at: #playgroundContents
 ]
 
@@ -36,10 +36,10 @@ Screenshot class >> profileTextChunkKeyword [
 
 { #category : #accessing }
 Screenshot class >> readFromFileNamed: fileName [
-	| formAndTexts firstText |
-	formAndTexts := PNGReadWriterWithTextChunks formAndTextFromFileNamed: fileName.
-	firstText := (formAndTexts at: #attachments) first text.
-	^self new form: (formAndTexts at: #form); profile: (STON fromString: firstText); yourself
+	| formAndChunks firstText |
+	formAndChunks := PNGReadWriterWithTextChunks formAndChunksFromFileNamed: fileName.
+	firstText := (formAndChunks at: #textChunks) first text.
+	^self new form: (formAndChunks at: #form); profile: (STON fromString: firstText); yourself
 ]
 
 { #category : #accessing }

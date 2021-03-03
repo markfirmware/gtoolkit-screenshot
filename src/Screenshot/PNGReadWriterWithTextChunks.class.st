@@ -8,7 +8,7 @@ Class {
 }
 
 { #category : #'image reading/writing' }
-PNGReadWriterWithTextChunks class >> formAndTextFromFileNamed: fileName [ 
+PNGReadWriterWithTextChunks class >> formAndChunksFromFileNamed: fileName [ 
 	"Answer a Form of the image stored (encoded) on the file with fileName.
 	This will (normally) autodetect the format and delegate to the correct concrete subclass."
 	
@@ -16,11 +16,11 @@ PNGReadWriterWithTextChunks class >> formAndTextFromFileNamed: fileName [
 	"ImageReadWriter formFromFileNamed: 'test.jpg'"
 	
 	^ fileName asFileReference 
-		binaryReadStreamDo: [ :in | self formAndTextFromStream: in ]
+		binaryReadStreamDo: [ :in | self formAndChunksFromStream: in ]
 ]
 
 { #category : #'image reading/writing' }
-PNGReadWriterWithTextChunks class >> formAndTextFromStream: aBinaryReadStream [
+PNGReadWriterWithTextChunks class >> formAndChunksFromStream: aBinaryReadStream [
 	"Answer a Form of the image stored on aBinaryReadStream.
 	This will (normally) autodetect the format and delegate to the correct concrete subclass.
 	Closes aBinaryReadStream when done."
@@ -34,7 +34,7 @@ PNGReadWriterWithTextChunks class >> formAndTextFromStream: aBinaryReadStream [
 	reader := readerClass new on: positionableReadStream.
 	form := reader nextImage.
 	aBinaryReadStream close.
-	^ Dictionary newFromPairs: { #form . form . #attachments . reader textChunks }
+	^ Dictionary newFromPairs: { #form . form . #textChunks . reader textChunks }
 ]
 
 { #category : #accessing }
