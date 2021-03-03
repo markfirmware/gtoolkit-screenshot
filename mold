@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=v0.8.522
+VERSION=v0.8.524
 GLAM=GlamorousToolkitLinux64-$VERSION
 
 if [[ ! -d $GLAM ]]
