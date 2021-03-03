@@ -85,8 +85,7 @@ PNGReadWriterWithTextChunks >> nextImage [
 
 { #category : #writing }
 PNGReadWriterWithTextChunks >> nextPutImage: aForm [
-	textChunks := #().
-	^self nextPutImage: aForm
+	^self nextPutImage: aForm withTextChunks: #()
 ]
 
 { #category : #writing }
@@ -132,7 +131,7 @@ PNGReadWriterWithTextChunks >> nextPutImage: aForm interlace: aMethod filter: aF
 	self writeChunk: crcStream.
 	crcStream resetToStart.
 	textChunks do: [ :x |
-		self writetEXtChunkOn: crcStream withKeyword: (x at: #keyword) text: (x at: #text).
+		x writetEXtChunkOn: crcStream.
 		self writeChunk: crcStream
 	].
 	crcStream resetToStart.
@@ -193,19 +192,10 @@ PNGReadWriterWithTextChunks >> processNextChunk [
 PNGReadWriterWithTextChunks >> processtEXtChunk [
 	| keywordAndText |
 	keywordAndText := chunk asString splitOn: Character null asString.
-	textChunks add: (Dictionary newFromPairs: { #keyword . keywordAndText first . #text . keywordAndText second })
+	textChunks add: (PNGtEXtChunk keyword: keywordAndText first text: keywordAndText second)
 ]
 
 { #category : #accessing }
 PNGReadWriterWithTextChunks >> textChunks [
 	^textChunks
-]
-
-{ #category : #writing }
-PNGReadWriterWithTextChunks >> writetEXtChunkOn: aStream withKeyword: keyword text: text [
-	"Write a tEXt chunk"
-	aStream nextPutAll: 'tEXt' asByteArray.
-	aStream nextPutAll: keyword asByteArray.
-	aStream nextPutAll: #(0) asByteArray.
-	aStream nextPutAll: text asByteArray
 ]

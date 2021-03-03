@@ -12,8 +12,8 @@ Class {
 }
 
 { #category : #accessing }
-Screenshot class >> isProfileTextChunk: chunkAsDictionary [
-	^ (chunkAsDictionary at: #keyword) = self profileTextChunkKeyword
+Screenshot class >> isProfileTextChunk: textChunk [
+	^ textChunk keyword = self profileTextChunkKeyword
 ]
 
 { #category : #accessing }
@@ -26,7 +26,7 @@ Screenshot class >> playgroundContentsFromFileNamed: fileName [
 	| attachments profileChunk |
 	attachments := (PNGReadWriterWithTextChunks formAndTextFromFileNamed: fileName) at: #attachments.
 	profileChunk := attachments detect: [ :c | self isProfileTextChunk: c ] ifNone: [ ^ nil ].
-	^ (STON fromString: (profileChunk at: #text)) at: #playgroundContents
+	^ (STON fromString: profileChunk text) at: #playgroundContents
 ]
 
 { #category : #accessing }
@@ -38,7 +38,7 @@ Screenshot class >> profileTextChunkKeyword [
 Screenshot class >> readFromFileNamed: fileName [
 	| formAndTexts firstText |
 	formAndTexts := PNGReadWriterWithTextChunks formAndTextFromFileNamed: fileName.
-	firstText := (formAndTexts at: #attachments) first at: #text.
+	firstText := (formAndTexts at: #attachments) first text.
 	^self new form: (formAndTexts at: #form); profile: (STON fromString: firstText); yourself
 ]
 
@@ -150,5 +150,5 @@ Screenshot >> writeToFileNamed: fileName [
 		onFileNamed: fileName
 		withTextChunks:
 			(OrderedCollection
-				with: (Dictionary newFromPairs: { #keyword . self class profileTextChunkKeyword . #text .  (STON toJsonString: profile) })) 
+				with: (PNGtEXtChunk keyword: self class profileTextChunkKeyword text: (STON toJsonString: profile)))
 ]
