@@ -12,8 +12,26 @@ Class {
 }
 
 { #category : #accessing }
+Screenshot class >> isProfileTextChunk: chunkAsDictionary [
+	^ (chunkAsDictionary at: #keyword) = self profileTextChunkKeyword
+]
+
+{ #category : #accessing }
 Screenshot class >> lastTaken [
 	^ lastTaken
+]
+
+{ #category : #accessing }
+Screenshot class >> playgroundContentsFromFileNamed: fileName [
+	| attachments profileChunk |
+	attachments := (PNGReadWriterWithTextChunks formAndTextFromFileNamed: fileName) at: #attachments.
+	profileChunk := attachments detect: [ :c | self isProfileTextChunk: c ] ifNone: [ ^ nil ].
+	^ (STON fromString: (profileChunk at: #text)) at: #playgroundContents
+]
+
+{ #category : #accessing }
+Screenshot class >> profileTextChunkKeyword [
+	^'Screenshot>>profile'
 ]
 
 { #category : #accessing }
@@ -56,12 +74,12 @@ Screenshot >> gtItemsFor: aView [
 ]
 
 { #category : #accessing }
-Screenshot >> playgroundContentsFor: i [
+Screenshot >> playgroundContentsForElement: i [
 	(i class == GtPlayground) ifTrue: [
 		^ i viewModel playBook string trimBoth
 	] ifFalse: [
 		i children do: [ :child | | childContents |
-			childContents := self playgroundContentsFor: child.
+			childContents := self playgroundContentsForElement: child.
 			childContents ifNotNil: [
 				^ childContents
 			]
@@ -80,17 +98,12 @@ Screenshot >> profileFor: anElement [
 	| aProfile playgroundContents |
 	aProfile := Dictionary new.
 	aProfile at: #textTree put: (self textTreeFor: anElement).
-	playgroundContents := self playgroundContentsFor: anElement.
+	playgroundContents := self playgroundContentsForElement: anElement.
 	playgroundContents ifNotNil: [
 		aProfile at: #playgroundContents put: playgroundContents
 	].
 	^ aProfile
 	
-]
-
-{ #category : #accessing }
-Screenshot >> profileTextChunkKeyword [
-	^'Screenshot>>profile'
 ]
 
 { #category : #accessing }
@@ -137,5 +150,5 @@ Screenshot >> writeToFileNamed: fileName [
 		onFileNamed: fileName
 		withTextChunks:
 			(OrderedCollection
-				with: (Dictionary newFromPairs: { #keyword . self profileTextChunkKeyword . #text .  (STON toJsonString: profile) })) 
+				with: (Dictionary newFromPairs: { #keyword . self class profileTextChunkKeyword . #text .  (STON toJsonString: profile) })) 
 ]
