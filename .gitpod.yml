@@ -1,0 +1,12 @@
+
+image: markformware/workspace-bionic-full-vnc-gtoolkit
+
+ports:
+  - port: 5900
+    onOpen: ignore
+  - port: 6080
+    onOpen: open-browser
+
+tasks:
+  - name: gtoolkit
+    command: ./mold
